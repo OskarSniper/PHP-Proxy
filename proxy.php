@@ -3,7 +3,7 @@
 $allowedRessources = array();
 
 // Cache enabled ? Or just use interal proxy
-$cacheEnabled = true;
+$cacheEnabled = false;
 
 // Absolute path to cache directory
 $cacheDirectory = "/var/www/cache";
