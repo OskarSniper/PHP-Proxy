@@ -1,6 +1,11 @@
 <?php
+/*
+* Author: Sebastian Waldbauer
+* Version: 0.2017.11.04
+* Last-Edit: 04.11.2017
+*/
 /* Configuration */
-$allowedRessources = array();
+$allowedRessources = array("https://use.typekit.net/mkp0qfm.js");
 
 // Cache enabled ? Or just use interal proxy
 $cacheEnabled = false;
@@ -100,10 +105,16 @@ if(isset($_GET['u'])) {
     // Clean url
     $url = filter_var($_GET['u'], FILTER_SANITIZE_URL);
     
-    // Check if url is allowed
-    if(!in_array($url, $allowedRessources)) { header("HTTP/1.1 403 Forbidden"); exit; }
+    print_r($url);
     
-    if(isset($_GET['c']) && cacheEnabled) {
+    // Check if url is allowed
+    if(!in_array($url, $allowedRessources)) {
+        header("HTTP/1.1 403 Forbidden"); 
+        exit; 
+    }
+    
+    // Check if cache is enabled & parameter is given
+    if(isset($_GET['c']) && $cacheEnabled) {
         $extension = explode('.', basename($url))[1];
         $buffer = "";
 
