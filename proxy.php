@@ -1,11 +1,10 @@
 <?php
 /*
-* Author: Sebastian Waldbauer
-* Version: 0.2017.11.04
-* Last-Edit: 04.11.2017
+ * Author: Waldbauer Sebastian
+ * Version: 0.2017.11.06
 */
 /* Configuration */
-$allowedRessources = array("https://use.typekit.net/mkp0qfm.js");
+$allowedRessources = array();
 
 // Cache enabled ? Or just use interal proxy
 $cacheEnabled = false;
@@ -15,6 +14,10 @@ $cacheDirectory = "/var/www/cache";
 
 // Cache refresh after 5 minutes
 $refreshCacheTime = 300;
+
+/* Security section */
+$serverSignature = "gws (rev2017.182.504.11)";
+$allowedIpAddresses = array();
 
 
 
@@ -102,18 +105,25 @@ function getContentType($ext) {
 }
 
 if(isset($_GET['u'])) {
+    
+    //Check if ip address contains smth, if true then check
+    if(sizeof($allowedIpAddresses) > 0) {
+        if(!in_array($_SERVER['REMOTE_ADDR'], $allowedIpAddresses)) {
+            header("HTTP/1.1 401 Unauthorized"); 
+            return; 
+        }
+    }
+    
     // Clean url
     $url = filter_var($_GET['u'], FILTER_SANITIZE_URL);
     
-    print_r($url);
-    
     // Check if url is allowed
-    if(!in_array($url, $allowedRessources)) {
+    if(!in_array($url, $allowedRessources)) { 
         header("HTTP/1.1 403 Forbidden"); 
         exit; 
     }
     
-    // Check if cache is enabled & parameter is given
+    $start = microtime(true);
     if(isset($_GET['c']) && $cacheEnabled) {
         $extension = explode('.', basename($url))[1];
         $buffer = "";
@@ -146,6 +156,9 @@ if(isset($_GET['u'])) {
         ob_start("ob_gzhandler");
 
         $contentType = getContentType($extension);
+        
+        header_remove("Server");
+        header("Server: " . $serverSignature);
 
         // Set Content-Type
         header("Content-type: " . $contentType['content-type']);
@@ -162,16 +175,29 @@ if(isset($_GET['u'])) {
         // Expire in one day
         header('Expires: ' . gmdate('D, d M Y H:i:s', time() + (86400 * 30)) . ' GMT');            
 
+        // Adding debug header
+        $end = microtime(true) - $start;
+        header("X-Service-ServingTime: " . $end);
+        
         // Write everything out
         echo $data;
     } else {
         $extension = explode('.', basename($url))[1];
         $contentType = getContentType($extension);
+        
+        print_r($extension);
 
+        header("Server: " . $serverSignature);
+        
         // Set Content-Type
         header("Content-type: " . $contentType['content-type']);
+        
+        // Adding debug header
+        $end = microtime(true) - $start;
+        header("X-Service-ServingTime: " . $end);
+        
         $buffer = file_get_contents($url);
-        echo $buffer;
+        //echo $buffer;
     }
     
 } else {
