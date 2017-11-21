@@ -1,7 +1,7 @@
 <?php
 /*
  * Author: Waldbauer Sebastian
- * Version: 0.2017.11.06
+ * Version: 0.2017.11.21
 */
 /* Configuration */
 $allowedRessources = array();
@@ -10,7 +10,7 @@ $allowedRessources = array();
 $cacheEnabled = false;
 
 // Absolute path to cache directory
-$cacheDirectory = "/var/www/cache";
+$cacheDirectory = "/var/www/cache/";
 
 // Cache refresh after 5 minutes
 $refreshCacheTime = 300;
@@ -118,14 +118,17 @@ if(isset($_GET['u'])) {
     $url = filter_var($_GET['u'], FILTER_SANITIZE_URL);
     
     // Check if url is allowed
-    if(!in_array($url, $allowedRessources)) { 
-        header("HTTP/1.1 403 Forbidden"); 
-        exit; 
+    if(sizeof($allowedRessources) > 0) {
+        if(!in_array($url, $allowedRessources)) { 
+            header("HTTP/1.1 403 Forbidden"); 
+            exit; 
+        }
     }
     
     $start = microtime(true);
     if(isset($_GET['c']) && $cacheEnabled) {
-        $extension = explode('.', basename($url))[1];
+        $explodeExtension = explode('.', basename($url));
+        $extension = end($explodeExtension);
         $buffer = "";
 
         // Write onto disk
@@ -157,7 +160,6 @@ if(isset($_GET['u'])) {
 
         $contentType = getContentType($extension);
         
-        header_remove("Server");
         header("Server: " . $serverSignature);
 
         // Set Content-Type
@@ -182,10 +184,9 @@ if(isset($_GET['u'])) {
         // Write everything out
         echo $data;
     } else {
-        $extension = explode('.', basename($url))[1];
+        $explodeExtension = explode('.', basename($url));
+        $extension = end($explodeExtension);
         $contentType = getContentType($extension);
-        
-        print_r($extension);
 
         header("Server: " . $serverSignature);
         
@@ -197,7 +198,7 @@ if(isset($_GET['u'])) {
         header("X-Service-ServingTime: " . $end);
         
         $buffer = file_get_contents($url);
-        //echo $buffer;
+        echo $buffer;
     }
     
 } else {

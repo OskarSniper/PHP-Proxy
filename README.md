@@ -27,3 +27,6 @@ Make sure the path your cache should be written on is read/writeable.
 
 ### Errorcode: "URL invalid"
 Make sure your given URL is valid.
+
+### Every url is accessable
+If $allowedRessources is empty. Every URL is allowed ;-)
