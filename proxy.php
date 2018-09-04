@@ -10,7 +10,7 @@ $allowedRessources = array();
 $cacheEnabled = false;
 
 // Absolute path to cache directory
-$cacheDirectory = "/var/www/cache/";
+$cacheDirectory = "cache/";
 
 // Cache refresh after 5 minutes
 $refreshCacheTime = 300;
@@ -19,7 +19,8 @@ $refreshCacheTime = 300;
 $serverSignature = "gws (rev2017.182.504.11)";
 $allowedIpAddresses = array();
 
-
+// Disable output compression by default...
+ini_set('zlib.output_compression', 'Off');
 
 /* Do not edit, only if you know what you're doing! */
 
@@ -125,6 +126,8 @@ if(isset($_GET['u'])) {
         }
     }
     
+    $buffer = file_get_contents($url);
+    
     $start = microtime(true);
     if(isset($_GET['c']) && $cacheEnabled) {
         $explodeExtension = explode('.', basename($url));
@@ -135,12 +138,16 @@ if(isset($_GET['u'])) {
         if((!file_exists($cacheDirectory . base64UrlEncode($url) . "." . $extension)))
         {
             $buffer = file_get_contents($url);
+            $buffer = gzencode($buffer, 9);
+            
             file_put_contents($cacheDirectory . base64UrlEncode($url) . "." . $extension, $buffer);
             $data = $buffer;
         } else {
             if(filemtime($cacheDirectory . base64UrlEncode($url) . "." . $extension) >= (filemtime($cacheDirectory . base64UrlEncode($url) . "." . $extension) + $refreshCacheTime))
             {
                 $buffer = file_get_contents($url);
+                $buffer = gzencode($buffer, 9);
+                
                 file_put_contents($cacheDirectory . base64UrlEncode($url) . "." . $extension, $buffer);
                 $data = $buffer;
             } else {
@@ -156,14 +163,12 @@ if(isset($_GET['u'])) {
             }
         }
 
-        ob_start("ob_gzhandler");
-
         $contentType = getContentType($extension);
         
         header("Server: " . $serverSignature);
 
         // Set Content-Type
-        header("Content-type: " . $contentType['content-type']);
+        header("Content-Type: " . $contentType['content-type']);
 
         // Set max-age to 1 day ( recommended from google )
         header('Cache-Control: public, max-age=' . (86400 * 30) . ', s-maxage=' . (86400 * 30));
@@ -175,7 +180,13 @@ if(isset($_GET['u'])) {
         header('ETag: ' . hash('sha256', $data));
 
         // Expire in one day
-        header('Expires: ' . gmdate('D, d M Y H:i:s', time() + (86400 * 30)) . ' GMT');            
+        header('Expires: ' . gmdate('D, d M Y H:i:s', time() + (86400 * 30)) . ' GMT');
+        
+        // GZip enconding
+        header('Content-Encoding: gzip');
+        
+        // correct length
+        header('Content-Length: ' . strlen($data));
 
         // Adding debug header
         $end = microtime(true) - $start;
@@ -191,7 +202,13 @@ if(isset($_GET['u'])) {
         header("Server: " . $serverSignature);
         
         // Set Content-Type
-        header("Content-type: " . $contentType['content-type']);
+        header("Content-Type: " . $contentType['content-type']);
+        
+        // GZip enconding
+        header('Content-Encoding: gzip');
+        
+        // correct length
+        header('Content-Length: ' . strlen($data));
         
         // Adding debug header
         $end = microtime(true) - $start;
